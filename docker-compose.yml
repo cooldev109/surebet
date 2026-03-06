@@ -1,0 +1,25 @@
+version: '3.9'
+
+services:
+  surebet:
+    build: .
+    container_name: surebet
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      # Override DB path to use the persistent volume
+      - DATABASE_URL=sqlite+aiosqlite:////data/surebet.db
+    volumes:
+      - surebet_data:/data
+    ports:
+      # Bind to localhost only — nginx proxies from port 80
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  surebet_data:

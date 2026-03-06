@@ -1,0 +1,17 @@
+[Unit]
+Description=Surebet Detection System
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/surebet
+EnvironmentFile=/opt/surebet/.env
+ExecStart=/opt/surebet/venv/bin/python run.py
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
