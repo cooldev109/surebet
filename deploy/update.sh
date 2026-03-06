@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ─────────────────────────────────────────────────────────────────────────────
-# Surebet Update — run on VPS to deploy the latest code from GitHub
+# Surebet Update — pull latest code from GitHub and restart
 # Usage:  bash /opt/surebet/deploy/update.sh
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
@@ -21,10 +21,10 @@ npm install --silent
 npm run build --silent
 cd "$APP_DIR"
 
-echo "Restarting service..."
-systemctl restart surebet
+echo "Restarting with PM2..."
+pm2 restart surebet
 
 echo ""
 echo "✅  Update complete!"
-echo "    Logs → journalctl -u surebet -f"
+echo "    Logs → pm2 logs surebet"
 echo ""

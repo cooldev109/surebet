@@ -3,9 +3,9 @@
 # Surebet VPS Setup — run once as root on a fresh Ubuntu 22.04 server
 #
 # Steps BEFORE running this script:
-#   1. SSH into the VPS:    ssh root@139.59.213.24
-#   2. Clone your repo:     git clone https://github.com/YOUR_USER/YOUR_REPO /opt/surebet
-#   3. Run this script:     cd /opt/surebet && bash deploy/setup.sh
+#   1. SSH into the VPS:  ssh root@139.59.213.24
+#   2. Clone your repo:   git clone https://github.com/cooldev109/surebet.git /opt/surebet
+#   3. Run this script:   cd /opt/surebet && bash deploy/setup.sh
 # ─────────────────────────────────────────────────────────────────────────────
 set -euo pipefail
 
@@ -14,7 +14,7 @@ VENV="$APP_DIR/venv"
 
 echo ""
 echo "╔══════════════════════════════════════════╗"
-echo "║   Surebet VPS Setup (GitHub + systemd)  ║"
+echo "║   Surebet VPS Setup  (GitHub + PM2)     ║"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 
@@ -23,10 +23,15 @@ echo "[1/6] Installing system packages..."
 apt-get update -qq
 apt-get install -y -qq python3.11 python3.11-venv python3-pip nginx git curl
 
-# Node.js 20 (to build React frontend)
+# Node.js 20 (frontend build + PM2)
 if ! command -v node &>/dev/null; then
     curl -fsSL https://deb.nodesource.com/setup_20.x | bash - >/dev/null
     apt-get install -y -qq nodejs
+fi
+
+# PM2 (global)
+if ! command -v pm2 &>/dev/null; then
+    npm install -g pm2 --silent
 fi
 
 # ── 2. Python virtual environment ────────────────────────────────────────────
@@ -52,7 +57,7 @@ if [ ! -f "$APP_DIR/.env" ]; then
     cp "$APP_DIR/.env.example" "$APP_DIR/.env"
     echo ""
     echo "  ⚠️  .env was created from .env.example."
-    echo "      Open it and fill in your credentials:"
+    echo "      Fill in your credentials:"
     echo ""
     echo "      nano $APP_DIR/.env"
     echo ""
@@ -68,23 +73,22 @@ nginx -t
 systemctl enable nginx
 systemctl reload nginx
 
-# Firewall
 if command -v ufw &>/dev/null; then
-    ufw allow OpenSSH  >/dev/null 2>&1 || true
+    ufw allow OpenSSH      >/dev/null 2>&1 || true
     ufw allow 'Nginx Full' >/dev/null 2>&1 || true
-    ufw --force enable >/dev/null 2>&1 || true
+    ufw --force enable     >/dev/null 2>&1 || true
 fi
 
-# ── 7. Systemd service ───────────────────────────────────────────────────────
-echo "[6/6] Installing systemd service..."
-cp "$APP_DIR/deploy/surebet.service" /etc/systemd/system/surebet.service
-systemctl daemon-reload
-systemctl enable surebet
-systemctl start surebet
+# ── 7. Start with PM2 ────────────────────────────────────────────────────────
+echo "[6/6] Starting Surebet with PM2..."
+cd "$APP_DIR"
+pm2 start deploy/ecosystem.config.js
+pm2 save               # persist process list across reboots
+pm2 startup | tail -1 | bash  # register PM2 with system init
 
 echo ""
 echo "  ✅  Surebet is running!"
 echo "      Dashboard → http://139.59.213.24"
-echo "      Status    → systemctl status surebet"
-echo "      Logs      → journalctl -u surebet -f"
+echo "      Status    → pm2 status"
+echo "      Logs      → pm2 logs surebet"
 echo ""
