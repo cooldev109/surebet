@@ -21,7 +21,14 @@ echo ""
 # ── 1. System packages ───────────────────────────────────────────────────────
 echo "[1/6] Installing system packages..."
 apt-get update -qq
-apt-get install -y -qq python3.11 python3.11-venv python3-pip nginx git curl
+apt-get install -y -qq software-properties-common nginx git curl
+
+# Add deadsnakes PPA for Python 3.11 (needed on Ubuntu 20.04)
+if ! command -v python3.11 &>/dev/null; then
+    add-apt-repository ppa:deadsnakes/ppa -y >/dev/null
+    apt-get update -qq
+fi
+apt-get install -y -qq python3.11 python3.11-venv python3-pip
 
 # Node.js 20 (frontend build + PM2)
 if ! command -v node &>/dev/null; then
